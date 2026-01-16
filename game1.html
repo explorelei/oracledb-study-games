@@ -101,7 +101,15 @@
             <h2 class="text-3xl font-bold text-gray-900 mb-2">クイズ完了！</h2>
             <p id="final-score" class="text-xl text-gray-600 mb-8"></p>
             <div id="grade-message" class="mb-8 p-6 bg-gray-50 rounded-lg italic text-gray-700"></div>
-            <button onclick="location.reload()" class="bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition shadow-lg">タイトルに戻る</button>
+            
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <button id="review-btn" onclick="startReview()" class="hidden bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition shadow-lg">
+                    間違えた問題のみ復習する
+                </button>
+                <button onclick="location.reload()" class="bg-gray-800 text-white font-bold py-3 px-8 rounded-lg hover:bg-black transition shadow-lg">
+                    タイトルに戻る
+                </button>
+            </div>
         </div>
     </div>
 
@@ -115,7 +123,6 @@
             },
             {
                 q: "AI Vector Searchにおいて、ベクトルデータを格納するための新しい専用データ型は？",
-                q_long: "生成AI連携で利用される、多次元の埋め込みデータを扱う型はどれですか？",
                 a: ["JSON_VECTOR", "EMBEDDING", "VECTOR", "BLOB_AI"],
                 c: 2,
                 e: "『VECTOR』データ型が新設されました。数千次元の数値を効率的に格納し、類似性検索が可能です。"
@@ -231,6 +238,7 @@
         ];
 
         let quizQuestions = [];
+        let missedQuestions = []; // 間違えた問題を保持
         let currentQuestionIdx = 0;
         let score = 0;
         let answered = false;
@@ -251,6 +259,7 @@
         const finalScore = document.getElementById('final-score');
         const gradeMessage = document.getElementById('grade-message');
         const trophyIcon = document.getElementById('trophy-icon');
+        const reviewBtn = document.getElementById('review-btn');
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -263,11 +272,22 @@
         function startQuiz(count) {
             const shuffled = shuffle([...allQuestions]);
             quizQuestions = count === 0 ? shuffled : shuffled.slice(0, count);
-            
+            initQuizSession();
+        }
+
+        function startReview() {
+            // 現在の間違えたリストを次の出題リストにする
+            quizQuestions = [...missedQuestions];
+            initQuizSession();
+        }
+
+        function initQuizSession() {
             currentQuestionIdx = 0;
             score = 0;
+            missedQuestions = []; // セッション開始時にリセット
             
             startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
             progressContainer.classList.remove('hidden');
             
@@ -309,6 +329,7 @@
                 resultBadge.textContent = "正解！";
                 resultBadge.className = "font-bold text-sm px-2 py-0.5 rounded mr-2 bg-green-100 text-green-700";
             } else {
+                missedQuestions.push(q); // 間違いリストに追加
                 buttons[index].classList.add('wrong');
                 buttons[q.c].classList.add('correct');
                 resultBadge.textContent = "不正解";
@@ -343,17 +364,21 @@
             let icon = "";
 
             if (ratio === 1) {
-                message = "【Oracle DB 26ai マスター】<br>完璧です！26aiの主要な新機能と19cとの差異を完全に把握しています。これからの移行プロジェクトのリーダーとしてふさわしい知識です！";
+                message = "【Oracle DB 26ai マスター】<br>完璧です！すべての問題を正解しました。26aiへの移行準備はバッチリです！";
                 icon = "🏆";
-            } else if (ratio >= 0.7) {
-                message = "【26ai プロフェッショナル】<br>素晴らしい！26aiの核となる「AI Vector Search」や「Duality Views」など、重要な進化をよく理解しています。";
-                icon = "✨";
-            } else if (ratio >= 0.4) {
-                message = "【移行準備中】<br>基礎は身についていますが、26aiではSQL周りやセキュリティも大幅に強化されています。間違えた箇所を復習してみましょう。";
-                icon = "📚";
+                reviewBtn.classList.add('hidden');
             } else {
-                message = "【要チェック】<br>26aiは19cからのメジャーアップデートであり、特に「マルチテナント必須」は大きな変更です。まずはアーキテクチャの変更から確認してみましょう。";
-                icon = "💡";
+                if (ratio >= 0.7) {
+                    message = "【26ai プロフェッショナル】<br>素晴らしい！あと少しでマスターです。間違えた箇所を復習しましょう。";
+                    icon = "✨";
+                } else if (ratio >= 0.4) {
+                    message = "【移行準備中】<br>基礎は身についていますが、まだ見落としがあるようです。復習機能で知識を定着させましょう。";
+                    icon = "📚";
+                } else {
+                    message = "【要チェック】<br>26aiは多くの新機能があります。間違えた問題を繰り返し解いて、特徴を掴みましょう。";
+                    icon = "💡";
+                }
+                reviewBtn.classList.remove('hidden');
             }
             
             gradeMessage.innerHTML = message;
