@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle Database 26ai クイズ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .quiz-container {
+            max-width: 750px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .option-btn {
+            transition: all 0.2s;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            background-color: #f0f7ff;
+            border-color: #3b82f6;
+        }
+        .progress-bar {
+            height: 6px;
+            background-color: #e5e7eb;
+            width: 100%;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #ef4444; /* Oracle Red */
+            transition: width 0.3s ease;
+        }
+        .correct { background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46 !important; }
+        .wrong { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="quiz-container">
+        <!-- Header -->
+        <div class="bg-gray-900 p-6 text-white text-center">
+            <h1 class="text-2xl font-bold">Oracle Database 26ai 移行クイズ</h1>
+            <p class="text-gray-400 mt-1">19cからの進化を網羅した20の設問</p>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="p-8 md:p-12 text-center">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">出題数を選択してください</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <button onclick="startQuiz(5)" class="p-6 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition group">
+                    <span class="block text-2xl font-bold text-gray-800 group-hover:text-red-600">5問</span>
+                    <span class="text-sm text-gray-500">サクッと確認</span>
+                </button>
+                <button onclick="startQuiz(10)" class="p-6 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition group">
+                    <span class="block text-2xl font-bold text-gray-800 group-hover:text-red-600">10問</span>
+                    <span class="text-sm text-gray-500">しっかり学習</span>
+                </button>
+                <button onclick="startQuiz(0)" class="p-6 border-2 border-gray-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition group">
+                    <span class="block text-2xl font-bold text-gray-800 group-hover:text-red-600">全問</span>
+                    <span class="text-sm text-gray-500">マスターを目指す</span>
+                </button>
+            </div>
+            <p class="text-sm text-gray-400">※問題はライブラリからランダムに選ばれます</p>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress-container" class="progress-bar hidden">
+            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="p-6 md:p-10 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="question-count" class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Question 1/--</span>
+                <span id="score-display" class="text-sm font-semibold text-red-600">Score: 0</span>
+            </div>
+            
+            <h2 id="question-text" class="text-xl font-bold text-gray-800 mb-8 leading-tight"></h2>
+
+            <div id="options-container" class="space-y-4"></div>
+
+            <div id="explanation-container" class="mt-8 p-5 bg-blue-50 border-l-4 border-blue-500 rounded hidden">
+                <div class="flex items-start mb-2">
+                    <span id="result-badge" class="font-bold text-sm px-2 py-0.5 rounded mr-2"></span>
+                    <p id="explanation-text" class="text-gray-700 text-sm leading-relaxed"></p>
+                </div>
+                <button id="next-btn" class="mt-4 w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-black transition">次へ進む</button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="p-10 text-center hidden">
+            <div id="trophy-icon" class="mb-6"></div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">クイズ完了！</h2>
+            <p id="final-score" class="text-xl text-gray-600 mb-8"></p>
+            <div id="grade-message" class="mb-8 p-6 bg-gray-50 rounded-lg italic text-gray-700"></div>
+            <button onclick="location.reload()" class="bg-red-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-red-700 transition shadow-lg">タイトルに戻る</button>
+        </div>
+    </div>
+
+    <script>
+        const allQuestions = [
+            {
+                q: "Oracle Database 26aiにおいて、サポートされる唯一のアーキテクチャは何ですか？",
+                a: ["非CDB構成", "マルチテナント構成 (CDB)", "外部DBリンク構成", "サーバーレス共有構成"],
+                c: 1,
+                e: "26aiからはマルチテナント構成が必須です。19cまで可能だった非CDB構成はサポートされません。"
+            },
+            {
+                q: "AI Vector Searchにおいて、ベクトルデータを格納するための新しい専用データ型は？",
+                q_long: "生成AI連携で利用される、多次元の埋め込みデータを扱う型はどれですか？",
+                a: ["JSON_VECTOR", "EMBEDDING", "VECTOR", "BLOB_AI"],
+                c: 2,
+                e: "『VECTOR』データ型が新設されました。数千次元の数値を効率的に格納し、類似性検索が可能です。"
+            },
+            {
+                q: "19cでは使えなかった、SQL標準の論理値を扱うデータ型は何ですか？",
+                a: ["BIT", "LOGIC", "BOOLEAN", "BOOL"],
+                c: 2,
+                e: "26aiから待望の『BOOLEAN』型（TRUE/FALSE/UNKNOWN）がSQLで正式にサポートされました。"
+            },
+            {
+                q: "JSON Duality Viewsの主な目的は何ですか？",
+                a: ["JSONをXMLに変換する", "JSONの柔軟性とリレーショナルの堅牢性を両立する", "JSONデータを自動で暗号化する", "JSONのインデックスを外部メモリに作成する"],
+                c: 1,
+                e: "データを正規化された表に保存しつつ、アプリからはJSONとして透過的に操作できる革新的な機能です。"
+            },
+            {
+                q: "未承認のSQL実行をデータベース内部で遮断する新しい防御機能は？",
+                a: ["SQL Firewall", "Database Sentry", "Query Guard", "Execution Shield"],
+                c: 0,
+                e: "SQL Firewallはホワイトリスト形式で実行を制御し、SQLインジェクションや不正アクセスを防止します。"
+            },
+            {
+                q: "26aiのSQLにおいて省略可能になった、ダミーテーブルを参照する句は？",
+                a: ["FROM DUAL", "GROUP BY", "WHERE ROWNUM=1", "HAVING"],
+                c: 0,
+                e: "『SELECT sysdate;』のように、FROM DUALを記述しなくてもSQLが実行可能になりました。"
+            },
+            {
+                q: "サイドカーとして配置し、アプリの変更なしで読み取りを高速化するキャッシュ層は？",
+                a: ["Global Cache", "True Cache", "Smart Memory", "Rapid Read Cache"],
+                c: 1,
+                e: "True CacheはプライマリDBのデータを自動キャッシュする中継レイヤーで、低レイテンシ応答を実現します。"
+            },
+            {
+                q: "26aiで新しくデータベース内で直接実行可能になったプログラミング言語は？",
+                a: ["Python", "Rust", "JavaScript", "Go"],
+                c: 2,
+                e: "Multilingual Engine (MLE) により、JavaScriptがPL/SQL同様にデータベース内で動作します。"
+            },
+            {
+                q: "複雑なデータの繋がりを探索するために、26aiがネイティブサポートしたクエリ言語は？",
+                a: ["SQL/PGQ (プロパティグラフ)", "GraphQL", "SPARQL", "Cypher"],
+                c: 0,
+                e: "SQL/PGQをサポートし、リレーショナルデータに対してグラフアルゴリズムによる検索が可能になりました。"
+            },
+            {
+                q: "スキーマレベルで権限を一括管理できる新しい権限（Privilege）はどれですか？",
+                a: ["SCHEMA ADMIN", "SCHEMA PRIVILEGES", "WHOLE SCHEMA GRANT", "ANY SCHEMA ACCESS"],
+                c: 1,
+                e: "従来はオブジェクト単位の権限付与が必要でしたが、スキーマ単位で権限を管理できるようになりました。"
+            },
+            {
+                q: "開発者が必要な権限をまとめた、26aiで導入された新しいロール名は？",
+                a: ["APP_OWNER_ROLE", "DEVELOPER_FULL", "DB_DEVELOPER_ROLE", "SQL_MASTER"],
+                c: 2,
+                e: "『DB_DEVELOPER_ROLE』には、開発に必要な標準的な権限がパッケージ化されています。"
+            },
+            {
+                q: "マイクロサービス等の高頻度更新で競合を回避する『Lock-free Reservations』は何を利用しますか？",
+                a: ["メモリ内コピー", "数値の差分管理", "ロックの自動タイムアウト", "楽観的ロックの強制"],
+                c: 1,
+                e: "特定の列（在庫数など）をロックせずに差分として管理し、コミット時に確定させることでスループットを高めます。"
+            },
+            {
+                q: "分散データベースにおいて、高可用性とデータ一貫性を担保する新しいレプリケーション技術は？",
+                a: ["Paxos", "Raftベース・レプリケーション", "Two-Phase Commit 2.0", "Quorum sync"],
+                c: 1,
+                e: "Globally Distributed DatabaseでRaftアルゴリズムを採用し、より堅牢でシンプルな冗長化を実現しました。"
+            },
+            {
+                q: "列の用途（メール、住所など）を定義し、制約を共通化できる新しい概念は？",
+                a: ["SQL Domains", "Data Categories", "Column Patterns", "Field Blueprints"],
+                c: 0,
+                e: "SQL Domainsを使用すると、データ型だけでなくバリデーションや表示形式を複数の列で再利用できます。"
+            },
+            {
+                q: "重要なトランザクションを優先し、低優先度の処理を待機させる機能は？",
+                a: ["Workload Management", "Priority Transactions", "Queue Controller", "Transaction Balancer"],
+                c: 1,
+                e: "Priority Transactionsは、指定した優先度に基づいてリソース競合時の制御を自動化します。"
+            },
+            {
+                q: "UPDATEやINSERT文で変更された値をその場で返すことができる新しい拡張は？",
+                a: ["OUTPUT句", "RETURNING INTOの強化", "SELECT AFTER UPDATE", "VALUE CAPTURE"],
+                c: 1,
+                e: "26aiではRETURNING INTO句が強化され、より柔軟に更新後の値を取得できるようになりました。"
+            },
+            {
+                q: "一度に複数の行を挿入・定義できるVALUES句の拡張機能は？",
+                a: ["Multi-row Insert", "Batch Values", "Table Value Constructor", "Array Const"],
+                c: 2,
+                e: "Table Value Constructorにより、FROM句内でVALUES(1, 'A'), (2, 'B')のように値を定義できます。"
+            },
+            {
+                q: "19cではエラーになりましたが、26aiのGROUP BY句で可能になった指定は？",
+                a: ["サブクエリの直接指定", "列エイリアスの使用", "正規表現の使用", "関数のネスト（3階層以上）"],
+                c: 1,
+                e: "SELECT句で定義したエイリアス（別名）を、GROUP BYやHAVING句でそのまま利用可能になりました。"
+            },
+            {
+                q: "DDL実行時に、既存のオブジェクトがあるかどうかで挙動を変える新しい構文は？",
+                a: ["TRY CREATE", "IF EXISTS / IF NOT EXISTS", "SKIP ERROR", "CHECK OBJECT"],
+                c: 1,
+                e: "CREATE TABLE IF NOT EXISTSのように記述でき、スクリプトの冪等性を保ちやすくなりました。"
+            },
+            {
+                q: "マイクロサービスでの長期実行トランザクションの一貫性を保つ、26aiがサポートするパターンは？",
+                a: ["Two-phase commit", "Sagas (サーガ)", "Eventual sync", "Snapshot isolation"],
+                c: 1,
+                e: "データベース内でSagasフレームワークをサポートし、分散システムでの補償トランザクション管理を容易にします。"
+            }
+        ];
+
+        let quizQuestions = [];
+        let currentQuestionIdx = 0;
+        let score = 0;
+        let answered = false;
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const progressContainer = document.getElementById('progress-container');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const explanationContainer = document.getElementById('explanation-container');
+        const explanationText = document.getElementById('explanation-text');
+        const resultBadge = document.getElementById('result-badge');
+        const nextBtn = document.getElementById('next-btn');
+        const progressFill = document.getElementById('progress-fill');
+        const questionCount = document.getElementById('question-count');
+        const scoreDisplay = document.getElementById('score-display');
+        const finalScore = document.getElementById('final-score');
+        const gradeMessage = document.getElementById('grade-message');
+        const trophyIcon = document.getElementById('trophy-icon');
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startQuiz(count) {
+            const shuffled = shuffle([...allQuestions]);
+            quizQuestions = count === 0 ? shuffled : shuffled.slice(0, count);
+            
+            currentQuestionIdx = 0;
+            score = 0;
+            
+            startScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            progressContainer.classList.remove('hidden');
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            const q = quizQuestions[currentQuestionIdx];
+            questionText.textContent = q.q;
+            questionCount.textContent = `Question ${currentQuestionIdx + 1}/${quizQuestions.length}`;
+            scoreDisplay.textContent = `Score: ${score}`;
+            
+            const progressPercent = (currentQuestionIdx / quizQuestions.length) * 100;
+            progressFill.style.width = `${progressPercent}%`;
+            
+            optionsContainer.innerHTML = '';
+            explanationContainer.classList.add('hidden');
+
+            q.a.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn w-full text-left p-4 border-2 border-gray-100 rounded-lg font-medium text-gray-700 shadow-sm hover:shadow';
+                button.textContent = option;
+                button.onclick = () => checkAnswer(index);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(index) {
+            if (answered) return;
+            answered = true;
+            
+            const q = quizQuestions[currentQuestionIdx];
+            const buttons = optionsContainer.getElementsByTagName('button');
+            
+            if (index === q.c) {
+                score++;
+                buttons[index].classList.add('correct');
+                resultBadge.textContent = "正解！";
+                resultBadge.className = "font-bold text-sm px-2 py-0.5 rounded mr-2 bg-green-100 text-green-700";
+            } else {
+                buttons[index].classList.add('wrong');
+                buttons[q.c].classList.add('correct');
+                resultBadge.textContent = "不正解";
+                resultBadge.className = "font-bold text-sm px-2 py-0.5 rounded mr-2 bg-red-100 text-red-700";
+            }
+
+            for (let btn of buttons) {
+                btn.disabled = true;
+            }
+
+            explanationText.textContent = q.e;
+            explanationContainer.classList.remove('hidden');
+        }
+
+        nextBtn.onclick = () => {
+            currentQuestionIdx++;
+            if (currentQuestionIdx < quizQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        };
+
+        function showResults() {
+            progressFill.style.width = '100%';
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            finalScore.textContent = `${quizQuestions.length}問中 ${score}問正解`;
+            
+            const ratio = score / quizQuestions.length;
+            let message = "";
+            let icon = "";
+
+            if (ratio === 1) {
+                message = "【Oracle DB 26ai マスター】<br>完璧です！26aiの主要な新機能と19cとの差異を完全に把握しています。これからの移行プロジェクトのリーダーとしてふさわしい知識です！";
+                icon = "🏆";
+            } else if (ratio >= 0.7) {
+                message = "【26ai プロフェッショナル】<br>素晴らしい！26aiの核となる「AI Vector Search」や「Duality Views」など、重要な進化をよく理解しています。";
+                icon = "✨";
+            } else if (ratio >= 0.4) {
+                message = "【移行準備中】<br>基礎は身についていますが、26aiではSQL周りやセキュリティも大幅に強化されています。間違えた箇所を復習してみましょう。";
+                icon = "📚";
+            } else {
+                message = "【要チェック】<br>26aiは19cからのメジャーアップデートであり、特に「マルチテナント必須」は大きな変更です。まずはアーキテクチャの変更から確認してみましょう。";
+                icon = "💡";
+            }
+            
+            gradeMessage.innerHTML = message;
+            trophyIcon.innerHTML = `<span class="text-6xl">${icon}</span>`;
+        }
+    </script>
+</body>
+</html>
