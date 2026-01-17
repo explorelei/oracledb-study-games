@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>26ai Arch Master (30 Questions)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .option-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .option-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900 flex flex-col items-center p-4">
+
+    <div class="max-w-2xl w-full mt-6 mb-12">
+        <!-- Header -->
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+            <div id="header-bar" class="bg-gradient-to-r from-red-600 to-orange-500 p-6 text-white text-center">
+                <div id="badge" class="inline-block bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-2">Standard Mode</div>
+                <h1 class="text-2xl font-black italic tracking-tighter">ORACLE ARCH MASTER 30</h1>
+                <p class="text-orange-100 text-xs mt-1">SGA, PGA, Processes & AI Vector Search</p>
+            </div>
+
+            <!-- Progress -->
+            <div class="w-full bg-slate-100 h-2 flex">
+                <div id="progress-bar" class="bg-orange-500 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex justify-between items-center px-6 py-3 bg-slate-50 border-b border-slate-100">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest" id="q-counter">Question 1 / 30</div>
+                <div class="flex gap-4">
+                    <div class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        <span id="score-correct" class="text-xs font-bold text-slate-600">0</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <span id="score-wrong" class="text-xs font-bold text-slate-600">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div id="game-area" class="p-8 min-h-[400px]">
+                <!-- Question View -->
+                <div id="quiz-view" class="fade-in">
+                    <h2 id="question-text" class="text-xl font-bold text-slate-800 leading-snug mb-8">Loading...</h2>
+                    <div id="options-container" class="space-y-3"></div>
+                    
+                    <!-- Feedback (Hidden by default) -->
+                    <div id="feedback" class="mt-8 p-6 rounded-2xl hidden">
+                        <div class="flex items-start gap-4">
+                            <span id="feedback-icon" class="text-2xl"></span>
+                            <div>
+                                <h3 id="feedback-title" class="font-bold text-lg mb-1"></h3>
+                                <p id="feedback-text" class="text-sm leading-relaxed"></p>
+                            </div>
+                        </div>
+                        <button id="next-btn" class="mt-6 w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition shadow-lg">Next</button>
+                    </div>
+                </div>
+
+                <!-- Result View -->
+                <div id="result-view" class="hidden text-center py-6 fade-in">
+                    <div class="mb-6">
+                        <div id="result-icon-box" class="inline-block p-6 rounded-full bg-orange-100 mb-4">
+                            <!-- SVG will be injected -->
+                        </div>
+                        <h2 id="result-title" class="text-3xl font-black text-slate-800">Section Clear!</h2>
+                        <p id="result-desc" class="text-slate-500 mt-2 italic px-4"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-8 max-w-sm mx-auto">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Correct</p>
+                            <p id="final-correct" class="text-3xl font-black text-slate-800">0</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">To Review</p>
+                            <p id="final-missed" class="text-3xl font-black text-red-600">0</p>
+                        </div>
+                    </div>
+
+                    <div id="action-buttons" class="space-y-3">
+                        <button id="restart-all-btn" class="w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition">最初からやり直す</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="text-center mt-8 text-slate-400 text-[10px] font-medium tracking-widest uppercase">Target Exam: Oracle 1Z0-182 & 23ai Architecture</p>
+    </div>
+
+    <script>
+        const ALL_QUESTIONS = [
+            { id: 1, q: "SGA（システム・グローバル領域）の主な目的は何ですか？", o: ["セッション固有の変数を保持する", "全プロセスが共有するデータと制御情報を保持する", "SQLをパースせずに直接実行する", "OSのメモリを直接管理する"], a: 1, e: "SGAは「Shared Global Area」であり、インスタンス内の全プロセスが共有するメモリ領域です。" },
+            { id: 2, q: "PGA（プログラム・グローバル領域）について正しいものはどれですか？", o: ["全サーバープロセスで共有される", "サーバープロセスごとに独立して割り当てられる", "ディスク上のログファイルである", "インスタンス停止後も保持される"], a: 1, e: "PGAはサーバープロセス専用の非共有メモリ領域で、ソートやスタック管理に使われます。" },
+            { id: 3, q: "Shared Poolの役割として正しいものは？", o: ["データブロックをディスクから読み込む", "SQLの実行計画やデータ辞書情報をキャッシュする", "REDOログを一時的に保存する", "Javaコードをコンパイルする"], a: 1, e: "Shared PoolはLibrary Cache（SQL実行計画）やData Dictionary Cacheを管理します。" },
+            { id: 4, q: "Oracle 23aiで導入された、ベクトル索引をキャッシュする新メモリ領域は？", o: ["Large Pool", "Vector Pool", "AI Buffer Cache", "Streams Pool"], a: 1, e: "23aiではSGA内にVector Poolが導入され、AIベクトル検索の高速化を担います。" },
+            { id: 5, q: "Database Buffer Cacheの機能は何ですか？", o: ["SQLテキストの保存", "データファイルから読み取ったデータブロックのコピーを保持する", "ユーザーパスワードのハッシュ化", "バックアップのスケジュール管理"], a: 1, e: "物理的なディスクI/Oを減らすため、最近使用したデータをメモリ上に保持します。" },
+            { id: 6, q: "Redo Log BufferからREDOログファイルへ書き込みを行うプロセスは？", o: ["DBWn", "LGWR", "CKPT", "PMON"], a: 1, e: "LGWR (Log Writer) がREDOログバッファの内容をオンラインREDOログファイルに書き出します。" },
+            { id: 7, q: "DBWnプロセスがデータを書き出すタイミングとして適切なものは？", o: ["コミットした瞬間", "チェックポイント発生時やバッファ不足時", "1秒ごと", "DB停止時のみ"], a: 1, e: "DBWnは非同期に動作し、バッファキャッシュが不足した際やチェックポイント時に書き出しを行います。" },
+            { id: 8, q: "CKPT（チェックポイント）プロセスの役割は何ですか？", o: ["パスワードの有効期限をチェックする", "制御ファイルとデータファイルヘッダーに同期情報を記録する", "ユーザーセッションを終了させる", "SQL文を最適化する"], a: 1, e: "CKPTは、インスタンスリカバリ時間を短縮するために同期情報を更新し、DBWnに書き出しを促します。" },
+            { id: 9, q: "PMON（プロセス・モニター）の役割は？", o: ["メモリの最大サイズを決定する", "失敗したユーザープロセスのリソースをクリーンアップする", "OSのパッチを適用する", "SQLを書き換える"], a: 1, e: "PMONは異常終了したプロセスを監視し、保持していたロックの解除やリソースの解放を行います。" },
+            { id: 10, q: "SMON（システム・モニター）が主に行うことは？", o: ["ユーザーの認証", "インスタンス・リカバリの実行", "ディスクのフォーマット", "JAVAプールの管理"], a: 1, e: "SMONは起動時のインスタンスリカバリや、一時セグメントのクリーンアップを担当します。" },
+            { id: 11, q: "Library Cacheに保存されるものは何ですか？", o: ["表のデータ定義", "解析済みのSQL文や実行計画", "ユーザーの氏名", "OSのログ情報"], a: 1, e: "解析（パース）のコストを抑えるため、SQLやPL/SQLの実行形式をキャッシュします。" },
+            { id: 12, q: "SGA_TARGETパラメータを設定すると何が起きますか？", o: ["PGAのサイズが固定される", "SGAの主要コンポーネントが自動調整（ASMM）される", "メモリが完全に解放される", "データベースが読み取り専用になる"], a: 1, e: "自動共有メモリ管理（ASMM）が有効になり、Shared PoolやBuffer Cacheのサイズが動的に調整されます。" },
+            { id: 13, q: "PGA_AGGREGATE_TARGETは何の制限値を設定しますか？", o: ["SGAとPGAの合計", "インスタンス全体のPGA使用量の合計目標", "各ユーザーが使える最大メモリ", "物理ディスクの総容量"], a: 1, e: "インスタンス全体のPGA使用量をこの目標値内に抑えるようOracleが制御します。" },
+            { id: 14, q: "ARCH（アーカイバ）プロセスの主な機能は？", o: ["古いデータを削除する", "オンラインREDOログをアーカイブ先にコピーする", "バックアップを圧縮する", "ディスクをスキャンする"], a: 1, e: "ARCHIVELOGモード時、満杯になったオンラインREDOログをアーカイブ（保存）します。" },
+            { id: 15, q: "Large Poolの一般的な用途ではないものはどれですか？", o: ["RMANバックアップの作業領域", "共有サーバー構成（MTS）のセッション情報", "SQLの実行計画キャッシュ", "パラレル実行のメッセージバッファ"], a: 2, e: "SQL実行計画のキャッシュはShared Poolの役割であり、Large Poolではありません。" },
+            { id: 16, q: "Oracle 23aiにおける「Vector Data Type」の利点は？", o: ["データの暗号化を自動で行う", "非構造化データに対するセマンティック検索を可能にする", "テーブルの結合を禁止する", "ディスク容量を倍増させる"], a: 1, e: "埋め込み（Embedding）されたベクトル値をネイティブに保存し、類似度検索を可能にします。" },
+            { id: 17, q: "1Z0-182関連：ベクトルのHNSW索引を管理するバックグラウンドプロセスは？", o: ["LGWR", "VBGR", "CKPT", "RECO"], a: 1, e: "23aiではVBGR（Vector Background）プロセスがベクトル索引の更新やメンテを行います。" },
+            { id: 18, q: "ASMM（自動共有メモリ管理）で自動調整されないものは？", o: ["Shared Pool", "Large Pool", "Redo Log Buffer", "Java Pool"], a: 2, e: "Redo Log Bufferは通常静的であり、ASMMによる動的調整の対象外です。" },
+            { id: 19, q: "「インスタンス」と「データベース」の正しい関係は？", o: ["同一のものである", "インスタンスはメモリ+プロセス、データベースは物理ファイル群", "インスタンスがファイルで、データベースがメモリ", "インスタンスはクラウド上の名前、データベースはオンプレミス"], a: 1, e: "Oracle Instance (SGA+Background Processes) が Database (Physical Files) を開きます。" },
+            { id: 20, q: "制御ファイル（Control File）の役割は？", o: ["ユーザーの給与データを保存する", "データベースの物理構造情報を保持する", "SQLの実行履歴を記録する", "OSのパッチ情報を管理する"], a: 1, e: "データファイルやログファイルの名前、場所、チェックポイント情報を管理する重要なファイルです。" },
+            { id: 21, q: "サーバープロセス（Server Process）が主に行う作業は？", o: ["REDOログをディスクに書く", "ユーザーの要求に応じてSQLを解析・実行し、データを返す", "メモリを物理的に増やす", "PCを再起動する"], a: 1, e: "クライアントからのリクエストを直接処理し、バッファキャッシュへの読み込み等を行います。" },
+            { id: 22, q: "AMM（自動メモリ管理）を有効にするパラメータは？", o: ["SGA_MAX_SIZE", "MEMORY_TARGET", "DB_CACHE_SIZE", "PGA_LIMIT"], a: 1, e: "MEMORY_TARGETを設定すると、SGAとPGAの全体的な管理が自動化されます。" },
+            { id: 23, q: "Shared Pool内の「Data Dictionary Cache」の役割は？", o: ["列名、テーブル名、権限などの情報をキャッシュする", "ユーザーデータをすべてキャッシュする", "動画ファイルをキャッシュする", "OSの環境変数を保存する"], a: 0, e: "SQL解析時に頻繁に参照されるデータベースのメタデータを保持します。" },
+            { id: 24, q: "Redo Log Bufferがいっぱいになると何が起きますか？", o: ["データベースが削除される", "LGWRが即座に書き出し、空きを作るまで待機が発生する", "SGAを自動で拡張する", "エラーを吐いてOSを落とす"], a: 1, e: "バッファに空きができるまで「log buffer space」待機イベントが発生します。" },
+            { id: 25, q: "マルチテナント環境において、SGAはどの単位で割り当てられますか？", o: ["各PDBごと", "CDBインスタンス全体", "ユーザーのスキーマごと", "テーブルスペースごと"], a: 1, e: "SGAはCDBのインスタンスで共有されます。" },
+            { id: 26, q: "リスナー（Listener）プロセスの役割は？", o: ["データをバックアップする", "外部からの接続要求を受け付けてサーバープロセスへ繋ぐ", "SQLを最適化する", "インデックスを作成する"], a: 1, e: "クライアントとデータベースサーバーの仲介を行う独立したプロセスです。" },
+            { id: 27, q: "コサイン類似度検索においてVector Poolが使われる理由は？", o: ["データを永久に保存するため", "インメモリで高速なベクトル演算を行うため", "ネットワーク帯域を節約するため", "UIを表示するため"], a: 1, e: "類似度検索の計算や索引（HNSW等）をメモリ上で処理し、応答速度を高めるためです。" },
+            { id: 28, q: "Oracle 23aiのAI Vector Searchで使用可能な代表的索引は？", o: ["B-Tree", "Bitmap", "HNSW / IVF", "R-Tree"], a: 2, e: "近似最近傍検索（ANN）をサポートする HNSW や IVF 索引が導入されています。" },
+            { id: 29, q: "PGAメモリ内の「SQL作業領域」は何に使用されますか？", o: ["バックアップの圧縮", "ソートやハッシュ結合などの実行時演算", "ログのアーカイブ", "JAVAコードの保存"], a: 1, e: "ORDER BY（ソート）や HASH JOIN などの演算処理のためのプライベートな作業場です。" },
+            { id: 30, q: "RECO（リカバラ）プロセスの役割は？", o: ["削除されたファイルを戻す", "分散トランザクションのエラーを自動解決する", "OSのパッチを当てる", "メモリを解放する"], a: 1, e: "複数のDBを跨ぐトランザクションで障害が起きた際、自動で解決を試みるバックグラウンドプロセスです。" }
+        ];
+
+        let currentQueue = [];
+        let missedIds = [];
+        let currentIdx = 0;
+        let correctThisRound = 0;
+        let isReviewMode = false;
+
+        // UI Refs
+        const qText = document.getElementById('question-text');
+        const qCounter = document.getElementById('q-counter');
+        const optionsBox = document.getElementById('options-container');
+        const feedbackBox = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const quizView = document.getElementById('quiz-view');
+        const resultView = document.getElementById('result-view');
+        const scoreCorrectText = document.getElementById('score-correct');
+        const scoreWrongText = document.getElementById('score-wrong');
+        const badge = document.getElementById('badge');
+
+        function startSession(questionsArray, review = false) {
+            currentQueue = [...questionsArray];
+            if (!review) {
+                // Shuffle if standard mode
+                currentQueue.sort(() => Math.random() - 0.5);
+                missedIds = [];
+            }
+            
+            isReviewMode = review;
+            currentIdx = 0;
+            correctThisRound = 0;
+            
+            quizView.classList.remove('hidden');
+            resultView.classList.add('hidden');
+            
+            updateStats();
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = currentQueue[currentIdx];
+            qText.innerText = q.q;
+            qCounter.innerText = `${isReviewMode ? 'Review' : 'Question'} ${currentIdx + 1} / ${currentQueue.length}`;
+            badge.innerText = isReviewMode ? "Review Mode" : "Standard Mode";
+            badge.className = `inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-2 ${isReviewMode ? 'bg-red-500 text-white' : 'bg-white/20 text-white'}`;
+            
+            progressBar.style.width = `${(currentIdx / currentQueue.length) * 100}%`;
+            
+            optionsBox.innerHTML = '';
+            q.o.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 border-2 border-slate-200 rounded-2xl font-medium text-slate-700 bg-white shadow-sm flex items-center";
+                btn.innerHTML = `<span class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mr-3 text-xs font-bold">${String.fromCharCode(65 + i)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(i);
+                optionsBox.appendChild(btn);
+            });
+
+            feedbackBox.classList.add('hidden');
+            optionsBox.classList.remove('hidden');
+        }
+
+        function checkAnswer(choice) {
+            const q = currentQueue[currentIdx];
+            const isCorrect = (choice === q.a);
+            const btns = optionsBox.querySelectorAll('button');
+            
+            btns.forEach(b => b.disabled = true);
+            
+            if (isCorrect) {
+                btns[choice].classList.add('border-green-500', 'bg-green-50', 'text-green-800');
+                correctThisRound++;
+            } else {
+                btns[choice].classList.add('border-red-500', 'bg-red-50', 'text-red-800');
+                btns[q.a].classList.add('border-green-500', 'bg-green-50');
+                
+                // Track for review
+                if (!missedIds.includes(q.id)) {
+                    missedIds.push(q.id);
+                }
+            }
+
+            showFeedback(isCorrect, q.e);
+            updateStats();
+        }
+
+        function showFeedback(correct, text) {
+            feedbackBox.classList.remove('hidden');
+            feedbackBox.className = `mt-8 p-6 rounded-2xl fade-in ${correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            document.getElementById('feedback-title').innerText = correct ? 'Correct!' : 'Incorrect';
+            document.getElementById('feedback-text').innerText = text;
+            document.getElementById('feedback-icon').innerText = correct ? '🎯' : '💡';
+        }
+
+        function updateStats() {
+            scoreCorrectText.innerText = correctThisRound;
+            scoreWrongText.innerText = isReviewMode ? missedIds.length : missedIds.length;
+        }
+
+        nextBtn.onclick = () => {
+            currentIdx++;
+            if (currentIdx < currentQueue.length) {
+                showQuestion();
+            } else {
+                showFinalResults();
+            }
+        };
+
+        function showFinalResults() {
+            quizView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+            progressBar.style.width = '100%';
+
+            const finalCorrect = document.getElementById('final-correct');
+            const finalMissed = document.getElementById('final-missed');
+            const resultTitle = document.getElementById('result-title');
+            const resultDesc = document.getElementById('result-desc');
+            const iconBox = document.getElementById('result-icon-box');
+            const btnArea = document.getElementById('action-buttons');
+
+            finalCorrect.innerText = correctThisRound;
+            finalMissed.innerText = missedIds.length;
+
+            btnArea.innerHTML = '';
+
+            if (missedIds.length === 0) {
+                resultTitle.innerText = "Congratulations!";
+                resultDesc.innerText = "すべての問題をマスターしました！Oracle 23aiの内部アーキテクチャの基礎は完璧です。";
+                iconBox.innerHTML = `<svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>`;
+                iconBox.className = "inline-block p-6 rounded-full bg-green-100 mb-4";
+            } else {
+                resultTitle.innerText = "Keep Going!";
+                resultDesc.innerText = `まだ不完全な箇所があります。間違えた ${missedIds.length} 問を完璧にするまでやり直しましょう。`;
+                iconBox.innerHTML = `<svg class="w-12 h-12 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                iconBox.className = "inline-block p-6 rounded-full bg-orange-100 mb-4";
+
+                const reviewBtn = document.createElement('button');
+                reviewBtn.className = "w-full bg-orange-600 text-white font-bold py-4 rounded-xl hover:bg-orange-500 transition shadow-lg";
+                reviewBtn.innerText = `間違えた ${missedIds.length} 問を復習する`;
+                reviewBtn.onclick = () => {
+                    const nextReviewQuestions = ALL_QUESTIONS.filter(q => missedIds.includes(q.id));
+                    missedIds = []; // Reset for next loop
+                    startSession(nextReviewQuestions, true);
+                };
+                btnArea.appendChild(reviewBtn);
+            }
+
+            const restartBtn = document.createElement('button');
+            restartBtn.className = "w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition";
+            restartBtn.innerText = "全30問を最初から解く";
+            restartBtn.onclick = () => startSession(ALL_QUESTIONS, false);
+            btnArea.appendChild(restartBtn);
+        }
+
+        // Init
+        startSession(ALL_QUESTIONS, false);
+    </script>
+</body>
+</html>
+
